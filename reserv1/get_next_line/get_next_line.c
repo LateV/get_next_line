@@ -12,56 +12,82 @@
 
 #include "get_next_line.h"
 
-int			ft_putline(char **line, char *buf, char c)
+int			ft_putline(t_getline *num, char **line, char c, int i)
 {
-	int		start;
 	int		j;
-	int		i;
 	char	*line_str;
 
-	i = 0;
-	while (buf[i])
+	j = num->pos;
+	i = i + num->pos;
+	while (num->content[num->pos] != '\0')
 	{
-		if (buf[i] == c)
+		if (num->content[num->pos] == c)
 			break ;
+		num->pos++;
 		i++;
 	}
-	start = i;
-	j = 0;
+	num->pos++;
 	line_str = ft_strnew(i);
-	while (buf[j] && j < i)
+	//printf("j = %d\n", j);
+	//printf("i = %d\n", i);
+	while (j < i)
 	{
-		line_str[j] = buf[j];
+		line_str[j] = num->content[j];
 		j++;
 	}
-	line_str[j] = '\0';
 	*line = line_str;
-	return (start);
+	if(num->content[j] == '\0')
+	{
+		free(num->content);
+		return (0);
+	}
+	free(num->content);
+	return (1);
 }
 
-t_list		*curr_file(t_list **afiles, int fd)
+t_getline		*curr_file(t_getline **afiles, int fd)
 {
-	t_list *che;
+	t_getline *che;
 
 	che = *afiles;
 	while (che)
 	{
-		if ((int)che->content_size == fd)
+		if (che->content_size == fd)
+		{
+			che->content = ft_strdup("");
 			return (che);
+		}
 		che = che->next;
 	}
-	che = ft_lstnew("", fd);
-	ft_lstadd(afiles, che);
+	che =(t_getline*)malloc(sizeof(t_getline) * 1);
+	che->content = ft_strdup("");
+	che->content_size = fd;
+	che->next = *afiles;
+	che->pos = 0;
+	*afiles = che;
 	return (che);
+}
+
+char		*ft_strjoinmy(char *s1, char *s2)
+{
+	char	*str;
+	int		len;
+
+	len = ft_strlen(s1) + ft_strlen(s2);
+	str = (char *)malloc(sizeof(char) * (len + 1));
+	ft_strcpy(str, s1);
+	ft_strcat(str, s2);
+	free(s1);
+	return(str);
 }
 
 int			get_next_line(const int fd, char **line)
 {
-	char			buf[BUFF_SIZE + 1];
-	int				i;
-	int				kol;
-	t_list			*curline;
-	static t_list	*afiles;
+	char				buf[BUFF_SIZE + 1];
+	char				*tmp;
+	int					kol;
+	t_getline			*curline;
+	static t_getline	*afiles;
 
 	if ((fd < 0 || line == NULL || read(fd, buf, 0) < 0))
 		return (-1);
@@ -69,16 +95,10 @@ int			get_next_line(const int fd, char **line)
 	while ((kol = read(fd, buf, BUFF_SIZE)))
 	{
 		buf[kol] = '\0';
-		(curline->content = ft_strjoin(curline->content, buf));
-		if (ft_strchr(buf, '\n'))
+		tmp = ft_strjoinmy(curline->content, buf);
+		curline->content = tmp;
+		if (kol < BUFF_SIZE)
 			break ;
 	}
-	if (kol < BUFF_SIZE && !ft_strlen(curline->content))
-		return (0);
-	i = ft_putline(line, curline->content, '\n');
-	if (i < (int)ft_strlen(curline->content))
-		curline->content = curline->content + (i + 1);
-	else
-		ft_strclr(curline->content);
-	return (1);
+	return(ft_putline(curline, line, '\n', 0));
 }
