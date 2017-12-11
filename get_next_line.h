@@ -10,17 +10,22 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-
-#ifndef FILLIT_H
-# define FILLIT_H
-# define BUFF_SIZE 32
+#ifndef GET_NEXT_LINE_H
+# define GET_NEXT_LINE_H
 # include <fcntl.h>
 # include "libft/libft.h"
+# include <stdio.h>
 
-typedef struct	s_file
+# define BUFF_SIZE 1
+
+typedef struct			s_getline
 {
-	int 	*fd;
-}				t_file;
-int	get_next_line(const int fd, char **line);
+	char				*content;
+	int					content_size;
+	struct s_getline	*next;
+	int					pos;
+}						t_getline;
+
+int						get_next_line(const int fd, char **line);
 
 #endif

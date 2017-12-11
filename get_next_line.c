@@ -5,69 +5,108 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: vibondar <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2017/11/20 17:24:59 by vibondar          #+#    #+#             */
-/*   Updated: 2017/11/20 17:25:00 by vibondar         ###   ########.fr       */
+/*   Created: 2017/12/04 19:41:11 by vibondar          #+#    #+#             */
+/*   Updated: 2017/12/04 19:41:12 by vibondar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
-#include <stdio.h>
 
-int	get_next_line(const int fd, char **line)
+void					ft_put(t_getline *num, int i)
 {
-	char	str[5] = "";
-	char	str1[5] = "";
-	int		ch;
-	int		i;
-	t_file 	*fdr;
-	/*
-	printf("!line = %d\n", !line);
-	printf("fd < 0 = %d\n", fd < 0);
-	printf("ch < 0 = %d\n", ch = read(fd, str, 10));
-	*/
-	i = 0;
+	char				*tmp;
+	int					j;
 
-	if (!line || fd < 0 || (ch = read(fd, NULL, 0)) < 0)
-		return (-1);
-	fdr = (t_file*)malloc(sizeof(t_file) * 8);
-	fdr[i].fd = &fd;
-	/*
-	if (fdr[i].fd == fd)
+	j = 0;
+	while (num->content[num->pos] != '\0')
+		num->pos++;
+	tmp = ft_strnew(num->pos - i + 1);
+	while (num->content[i] != '\0')
+	{
+		tmp[j] = num->content[i + 1];
+		j++;
 		i++;
-	fdr[i].fd = fd;
-	*/
-	printf("fd[0] = %d\n", fdr[0].fd);
-	/*
-	printf("fd[1] = %d\n", fdr[1].fd);
-	*/
-	read(fdr[0].fd , str , 5);
-	//read(fdr[1].fd, str1 , 5);
-	printf("%s\n", str);
-	//printf("%s\n", str1);
-
-	return (0);
+	}
+	tmp[j] = '\0';
+	free(num->content);
+	num->content = ft_strnew(num->pos - j + 1);
+	ft_strcpy(num->content, tmp);
+	free(tmp);
+	num->pos = 0;
 }
 
-
-
-int main(int argc, char **argv)
+int						ft_putline(t_getline *num, char **line, int i)
 {
-	int		fd;
-	int		fd1;
-	int		fd2;
-	int		i;
-	char	**file;
+	char				*line_str;
 
-	file = (char**)malloc(sizeof(char*) * 8);
-	argc = 1;
-	fd = open(argv[1], O_RDONLY);
-	get_next_line(fd,file);
-	close(fd);
-	fd1 = open(argv[2], O_RDONLY);
-	get_next_line(fd1,file);
-	close(fd1);
-	fd2 = open(argv[3], O_RDONLY);
-	get_next_line(fd2,file);
-	close(fd2);
-	return (0);
+	while (num->content[i] != '\0' && num->content[i] != '\n')
+	{
+		num->pos++;
+		i++;
+	}
+	line_str = ft_strnew(num->pos);
+	ft_strncpy(line_str, num->content, num->pos);
+	*line = line_str;
+	ft_put(num, i);
+	return (1);
+}
+
+t_getline				*curr_file(t_getline **afiles, int fd)
+{
+	t_getline			*che;
+
+	che = *afiles;
+	while (che)
+	{
+		if (che->content_size == fd)
+			return (che);
+		che = che->next;
+	}
+	che = (t_getline*)malloc(sizeof(t_getline) * 1);
+	che->content = ft_strdup("");
+	che->content_size = fd;
+	che->next = *afiles;
+	che->pos = 0;
+	*afiles = che;
+	return (che);
+}
+
+char					*ft_strjoinmy(char *s1, char *s2)
+{
+	char				*str;
+	int					len;
+
+	len = ft_strlen(s1) + ft_strlen(s2);
+	str = (char *)malloc(sizeof(char) * (len + 1));
+	ft_strcpy(str, s1);
+	ft_strcat(str, s2);
+	free(s1);
+	return (str);
+}
+
+int						get_next_line(const int fd, char **line)
+{
+	char				buf[BUFF_SIZE + 1];
+	char				*tmp;
+	int					kol;
+	t_getline			*curline;
+	static t_getline	*afiles;
+
+	if ((fd < 0 || line == NULL || read(fd, buf, 0) < 0))
+		return (-1);
+	curline = curr_file(&afiles, fd);
+	if (ft_strchr(curline->content, '\n') == NULL)
+	{
+		while ((kol = read(fd, buf, BUFF_SIZE)))
+		{
+			buf[kol] = '\0';
+			tmp = ft_strjoinmy(curline->content, buf);
+			curline->content = tmp;
+			if (ft_strchr(buf, '\n'))
+				break ;
+		}
+	}
+	if (ft_strlen(curline->content) == 0)
+		return (0);
+	return (ft_putline(curline, line, 0));
 }
